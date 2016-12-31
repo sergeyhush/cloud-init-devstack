@@ -1,0 +1,36 @@
+#cloud-config
+hostname: devstack
+ssh_pwauth: true
+apt_update: true
+apt_upgrade: true
+users:
+  - default
+  - name: stack
+    lock_passwd: False
+    sudo: ["ALL=(ALL) NOPASSWD:ALL\nDefaults:stack !requiretty"]
+    shell: /bin/bash
+write_files:
+  - content: |
+        #!/bin/sh
+        sudo chown stack:stack /home/stack
+        cd /home/stack
+        git clone https://git.openstack.org/openstack-dev/devstack
+        cd devstack
+        echo '[[local|localrc]]' > local.conf
+        echo ADMIN_PASSWORD=password >> local.conf
+        echo DATABASE_PASSWORD=password >> local.conf
+        echo RABBIT_PASSWORD=password >> local.conf
+        echo SERVICE_PASSWORD=password >> local.conf
+        ./stack.sh
+    path: /home/stack/start.sh
+    permissions: 0755
+runcmd:
+  - su -l stack ./start.sh
+  - touch /etc/cloud/cloud-init.disabled
+  - sleep 10 && shutdown -h now
+
+power_state:
+  delay: 10
+  mode: poweroff
+  message: Bye Bye
+# vim:syntax=yaml
